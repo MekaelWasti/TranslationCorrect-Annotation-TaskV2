@@ -1,0 +1,79 @@
+{
+  "translations": [
+    {
+      "id": "1",
+      "englishText": "The weather is beautiful today.",
+      "chineseText": "今天天气很好。"
+    },
+    {
+      "id": "2",
+      "englishText": "I love reading books in my spare time.",
+      "chineseText": "我喜欢在空闲时间看书。"
+    },
+    {
+      "id": "3",
+      "englishText": "Could you please help me with this problem?",
+      "chineseText": "你能帮我解决这个问题吗？"
+    },
+    {
+      "id": "4",
+      "englishText": "The restaurant serves delicious food.",
+      "chineseText": "这家餐厅的食物很美味。"
+    },
+    {
+      "id": "5",
+      "englishText": "She is studying computer science at university.",
+      "chineseText": "她在大学学习计算机科学。"
+    },
+    {
+      "id": "6",
+      "englishText": "The train will arrive in ten minutes.",
+      "chineseText": "火车将在十分钟后到达。"
+    },
+    {
+      "id": "7",
+      "englishText": "Please remember to bring your passport.",
+      "chineseText": "请记得带上你的护照。"
+    },
+    {
+      "id": "8",
+      "englishText": "The museum is closed on Mondays.",
+      "chineseText": "博物馆在星期一闭馆。"
+    },
+    {
+      "id": "9",
+      "englishText": "This movie is based on a true story.",
+      "chineseText": "这部电影改编自真实故事。"
+    },
+    {
+      "id": "10",
+      "englishText": "Can you speak more slowly, please?",
+      "chineseText": "请你说慢一点好吗？"
+    },
+    {
+      "id": "11",
+      "englishText": "The concert will begin at 8 PM.",
+      "chineseText": "音乐会将在晚上8点开始。"
+    },
+    {
+      "id": "12",
+      "englishText": "She has been learning Chinese for three years.",
+      "chineseText": "她学习中文已经三年了。"
+    },
+    {
+      "id": "13",
+      "englishText": "The package should arrive by next week.",
+      "chineseText": "包裹应该在下周到达。"
+    },
+    {
+      "id": "14",
+      "englishText": "Would you like sugar in your coffee?",
+      "chineseText": "你的咖啡要加糖吗？"
+    },
+    {
+      "id": "15",
+      "englishText": "The meeting has been rescheduled to tomorrow.",
+      "chineseText": "会议已改期到明天。"
+    }
+  ]
+} 
