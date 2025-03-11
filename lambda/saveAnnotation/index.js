@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 
 let cachedDb = null;
 
@@ -16,49 +16,85 @@ async function connectToDatabase() {
 }
 
 exports.handler = async (annotation) => {
-  // Log the incoming annotation
   console.log('Received annotation:', JSON.stringify(annotation, null, 2));
 
   try {
     const db = await connectToDatabase();
-    const collection = db.collection(process.env.MONGODB_COLLECTION_NAME);
+    const translationsCollection = db.collection('english-chinese-input-dataset');
+    const annotationsCollection = db.collection(process.env.MONGODB_COLLECTION_NAME);
 
-    // Check for existing annotation
-    const existingAnnotation = await collection.findOne({
+    // Check for existing annotation first
+    const existingAnnotation = await annotationsCollection.findOne({
       userId: annotation.userId,
       id: annotation.id
     });
 
+    console.log('Existing annotation check:', existingAnnotation);
+
     if (existingAnnotation) {
-      return {
+      const response = {
         statusCode: 409,
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          message: 'This translation has already been annotated by you. Please move to the next one.',
+          message: 'This translation has already been annotated by you.',
           error: 'DUPLICATE_SUBMISSION'
         })
       };
+      console.log('Duplicate submission response:', response);
+      return response;
     }
 
-    const result = await collection.insertOne(annotation);
+    // Update the translation document with annotation status
+    const updateResult = await translationsCollection.updateOne(
+      { _id: new ObjectId(annotation.id) },
+      { 
+        $set: { 
+          [`annotationStatus.${annotation.userId}`]: true 
+        } 
+      }
+    );
 
-    return {
+    console.log('Translation update result:', updateResult);
+
+    if (updateResult.matchedCount === 0) {
+      const response = {
+        statusCode: 404,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: 'Translation not found',
+          error: 'NOT_FOUND'
+        })
+      };
+      console.log('Not found response:', response);
+      return response;
+    }
+
+    // Save the full annotation details
+    const insertResult = await annotationsCollection.insertOne(annotation);
+    console.log('Annotation insert result:', insertResult);
+
+    const successResponse = {
       statusCode: 200,
       headers: {
-        "": "*",
+        "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        message: 'Annotation saved successfully',
-        id: result.insertedId
+        message: 'Annotation saved successfully'
       })
     };
+    console.log('Success response:', successResponse);
+    return successResponse;
+
   } catch (error) {
     console.error('Error:', error);
-    return {
+    const errorResponse = {
       statusCode: 500,
       headers: {
         "Access-Control-Allow-Origin": "*",
@@ -69,5 +105,7 @@ exports.handler = async (annotation) => {
         error: error.message
       })
     };
+    console.log('Error response:', errorResponse);
+    return errorResponse;
   }
 }; 

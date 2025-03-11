@@ -129,6 +129,15 @@ function App() {
   const handleAnnotationSubmit = async (editedTranslation: string, errorSpans: ErrorSpan[], overallScore: number) => {
     if (!user || !selectedEntry) return;
 
+    // Check if already submitted
+    if (selectedEntry.isSubmitted) {
+      setMessage({
+        text: "This translation has already been annotated by you. Please move to the next one.",
+        type: "error",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setMessage(null);
 
@@ -144,6 +153,9 @@ function App() {
       submittedAt: new Date(),
     };
 
+    // Log the submission data (for development)
+    console.log("Submitting annotation:", annotation);
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_AWS_ANNOTATION_ENDPOINT}`,
@@ -157,41 +169,61 @@ function App() {
       );
 
       const result = await response.json();
+      console.log("API Response:", result);
+
+      // Check if the response itself was not successful
+      if (!response.ok) {
+        setMessage({
+          text: result.message || "Failed to submit annotation.",
+          type: "error",
+        });
+        return;
+      }
+
+      // Check specific error cases
+      if (result.statusCode === 404) {
+        setMessage({
+          text: "Translation not found. It may have been deleted.",
+          type: "error",
+        });
+        setCurrentPage(currentPage);
+        return;
+      }
 
       if (result.statusCode === 409) {
         setMessage({
-          text: 'This translation has already been annotated by you. Please move to the next one.',
-          type: 'error'
+          text: "This translation has already been annotated by you. Please move to the next one.",
+          type: "error",
         });
         return;
       }
-
-      if (result.error) {
+      if (result.statusCode != 200) {
         setMessage({
-          text: result.message || 'Failed to submit annotation.',
-          type: 'error'
+          text: "Failed to submit annotation. Please try again.",
+          type: "error",
         });
         return;
       }
 
-      // Update the isSubmitted status in the translations array
-      setTranslations(prev => {
+      // Only update state and show success if everything worked
+      setTranslations((prev) => {
         if (!prev) return prev;
-        return prev.map(t => 
-          t.id === selectedEntry.id 
-            ? { ...t, isSubmitted: true }
-            : t
+        return prev.map((t) =>
+          t.id === selectedEntry.id ? { ...t, isSubmitted: true } : t
         );
       });
 
-      setMessage({ text: 'Annotation submitted successfully!', type: 'success' });
+      setMessage({
+        text: "Annotation submitted successfully!",
+        type: "success",
+      });
       moveToNextEntry();
 
     } catch (err) {
-      console.error('Submission error:', err);
+      console.error("Submission error:", err);
       setMessage({
-        text: 'Failed to submit annotation. Please try again.',
-        type: 'error'
+        text: "Failed to submit annotation. Please try again.",
+        type: "error",
       });
     } finally {
       setIsSubmitting(false);
@@ -203,6 +235,13 @@ function App() {
     setIsSubmitting(true);
     setMessage(null);
 
+    // Log the submission data (for development)
+    const deleteBody = {
+      userId: user.uid,
+      id: selectedEntry.id,
+    };
+    console.log("Submitting annotation deletion:", deleteBody);
+    
     try {
       const response = await fetch(
         `${import.meta.env.VITE_AWS_ANNOTATION_ENDPOINT}`,
@@ -211,51 +250,49 @@ function App() {
           headers: {
             "content-type": "application/json",
           },
-          body: JSON.stringify({
-            userId: user.uid,
-            id: selectedEntry.id,
-          }),
+          body: JSON.stringify(deleteBody),
         }
       );
 
       const result = await response.json();
 
+      console.log("API Response:", result);
+
       if (result.statusCode === 404) {
         setMessage({
-          text: 'No submission found to cancel.',
-          type: 'error'
+          text: "Translation not found. It may have been deleted.",
+          type: "error",
         });
+        // Refresh translations to get updated state
+        setCurrentPage(currentPage);
         return;
       }
 
-      if (result.error) {
+      if (result.statusCode != 200 || result.error) {
         setMessage({
-          text: result.message || 'Failed to cancel submission.',
-          type: 'error'
+          text: result.message || "Failed to cancel submission.",
+          type: "error",
         });
         return;
       }
 
       // Update the isSubmitted status in the translations array
-      setTranslations(prev => {
+      setTranslations((prev) => {
         if (!prev) return prev;
-        return prev.map(t => 
-          t.id === selectedEntry.id 
-            ? { ...t, isSubmitted: false }
-            : t
+        return prev.map((t) =>
+          t.id === selectedEntry.id ? { ...t, isSubmitted: false } : t
         );
       });
-      
-      setMessage({ 
-        text: 'Submission cancelled successfully.', 
-        type: 'success' 
-      });
 
-    } catch (err) {
-      console.error('Cancel error:', err);
       setMessage({
-        text: 'Failed to cancel submission. Please try again.',
-        type: 'error'
+        text: "Submission cancelled successfully.",
+        type: "success",
+      });
+    } catch (err) {
+      console.error("Cancel error:", err);
+      setMessage({
+        text: "Failed to cancel submission. Please try again.",
+        type: "error",
       });
     } finally {
       setIsSubmitting(false);

@@ -4,23 +4,41 @@ let cachedDb = null;
 
 async function connectToDatabase() {
   if (cachedDb) {
+    console.log("Using cached database connection");
     return cachedDb;
   }
 
-  const client = new MongoClient(process.env.MONGODB_URI);
-  await client.connect();
-  
-  const db = client.db(process.env.MONGODB_DB_NAME);
-  
-  // Ensure index exists for efficient querying
-  const collection = db.collection(process.env.MONGODB_COLLECTION_NAME);
-  await collection.createIndex({ userId: 1, id: 1 });
-  
-  cachedDb = db;
-  return db;
+  console.log("Creating new database connection");
+  const client = new MongoClient(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000, // 5 second timeout
+    connectTimeoutMS: 5000
+  });
+
+  try {
+    await client.connect();
+    console.log("Connected to MongoDB");
+    
+    const db = client.db(process.env.MONGODB_DB_NAME);
+    
+    // Test the connection
+    await db.command({ ping: 1 });
+    console.log("Database connection verified");
+    
+    // Ensure index exists for efficient querying
+    const collection = db.collection(process.env.MONGODB_COLLECTION_NAME);
+    await collection.createIndex({ userId: 1, id: 1 });
+    
+    cachedDb = db;
+    return db;
+  } catch (err) {
+    console.error("MongoDB connection error:", err);
+    throw new Error(`Database connection failed: ${err.message}`);
+  }
 }
 
 exports.handler = async (event) => {
+  console.log("Received request:", event);
+  
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': '*',
@@ -50,31 +68,22 @@ exports.handler = async (event) => {
       .toArray();
 
     // Transform translations and get submission status if userId is provided
-    const transformedTranslations = await Promise.all(translations.map(async (item) => {
+    const transformedTranslations = translations.map(item => {
       const translation = {
         id: item._id.toString(),
         englishText: item.original,
         chineseText: item.machine_translation,
-        isSubmitted: false
+        referenceText: item.ref,
+        isSubmitted: userId ? !!(item.annotationStatus?.[userId]) : false
       };
 
-      if (userId) {
-        // Check if this translation has been submitted by the user
-        const submission = await annotationsCollection.findOne({
-          userId,
-          id: translation.id
-        }, { projection: { _id: 1 } });
-        
-        translation.isSubmitted = !!submission;
-      }
-
       return translation;
-    }));
+    });
 
     const response = {
       statusCode: 200,
       headers,
-      body: {
+      body: JSON.stringify({
         translations: transformedTranslations,
         pagination: {
           total,
@@ -82,7 +91,7 @@ exports.handler = async (event) => {
           currentPage: page,
           limit
         }
-      }
+      })
     };
 
     return response;
@@ -91,10 +100,10 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers,
-      body: {
+      body: JSON.stringify({
         message: error.message || 'Error fetching translations',
         error: 'INTERNAL_SERVER_ERROR'
-      }
+      })
     };
   }
 }; 

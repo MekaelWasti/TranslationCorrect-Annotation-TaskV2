@@ -170,9 +170,6 @@ export const TranslationAnnotator = ({ entry, onSubmit, onCancel, isSubmitting }
 
     // Pass the complete submission data to the parent component
     onSubmit(submission.editedTranslation, submission.errorSpans, submission.overallScore);
-
-    // Log the submission data (for development)
-    console.log('Submitting annotation:', submission);
   };
 
   const handleCancel = () => {
@@ -180,55 +177,30 @@ export const TranslationAnnotator = ({ entry, onSubmit, onCancel, isSubmitting }
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, m: 2 }}>
-      {/* Original Text Section */}
-      <Box sx={{ mb: 4 }}>
-        <Typography 
-          variant="subtitle2" 
-          sx={{ 
-            color: 'text.secondary',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            fontWeight: 500,
-            mb: 1
-          }}
-        >
-          Source (English)
-        </Typography>
-        <Paper 
-          variant="outlined" 
-          sx={{ 
-            p: 2,
-            backgroundColor: 'background.default'
-          }}
-        >
-          <Typography>{entry.englishText}</Typography>
-        </Paper>
-      </Box>
+    <Box sx={{ p: 3 }}>
+      {/* Source Text */}
+      <Typography variant="h6" gutterBottom>
+        Source Text
+      </Typography>
+      <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.paper' }}>
+        <Typography>{entry.englishText}</Typography>
+      </Paper>
 
-      <Box sx={{ mb: 4 }}>
-        <Typography 
-          variant="subtitle2" 
-          sx={{ 
-            color: 'text.secondary',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            fontWeight: 500,
-            mb: 1
-          }}
-        >
-          Machine Translation (Chinese)
-        </Typography>
-        <Paper 
-          variant="outlined" 
-          sx={{ 
-            p: 2,
-            backgroundColor: 'background.default'
-          }}
-        >
-          <Typography>{entry.chineseText}</Typography>
-        </Paper>
-      </Box>
+      {/* Machine Translation */}
+      <Typography variant="h6" gutterBottom>
+        Machine Translation
+      </Typography>
+      <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.paper' }}>
+        <Typography>{entry.chineseText}</Typography>
+      </Paper>
+
+      {/* Reference Translation */}
+      <Typography variant="h6" gutterBottom>
+        Reference Translation
+      </Typography>
+      <Paper sx={{ p: 2, mb: 3, bgcolor: 'background.paper' }}>
+        <Typography>{entry.referenceText}</Typography>
+      </Paper>
 
       {/* Error Annotation Section */}
       <Paper 
@@ -466,6 +438,6 @@ export const TranslationAnnotator = ({ entry, onSubmit, onCancel, isSubmitting }
           Cancel Submit
         </Button>
       </Stack>
-    </Paper>
+    </Box>
   );
 }; 

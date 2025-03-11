@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 
 let cachedDb = null;
 
@@ -29,37 +29,33 @@ exports.handler = async ({ userId, id }) => {
   };
 
   try {
-    console.log('Received delete request:', { userId, id });
-    
     const db = await connectToDatabase();
-    const collection = db.collection(process.env.MONGODB_COLLECTION_NAME);
+    const translationsCollection = db.collection('english-chinese-input-dataset');
+    const annotationsCollection = db.collection(process.env.MONGODB_COLLECTION_NAME);
 
-    if (!userId || !id) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          message: 'Missing required fields: userId and id',
-          error: 'INVALID_REQUEST'
-        })
-      };
-    }
+    // Remove the user's annotation status
+    const result = await translationsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { 
+        $unset: { 
+          [`annotationStatus.${userId}`]: "" 
+        } 
+      }
+    );
 
-    const result = await collection.deleteOne({
-      userId,
-      id
-    });
-
-    if (result.deletedCount === 0) {
+    if (result.matchedCount === 0) {
       return {
         statusCode: 404,
         headers,
         body: JSON.stringify({
-          message: 'Annotation not found',
+          message: 'Translation not found',
           error: 'NOT_FOUND'
         })
       };
     }
+
+    // Also remove the full annotation
+    await annotationsCollection.deleteOne({ userId, id });
 
     return {
       statusCode: 200,
@@ -74,7 +70,7 @@ exports.handler = async ({ userId, id }) => {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        message: 'Error processing request',
+        message: 'Error deleting annotation',
         error: error.message
       })
     };
