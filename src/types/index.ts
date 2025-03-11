@@ -2,6 +2,7 @@ export interface TranslationEntry {
   id: string;
   englishText: string;
   chineseText: string;
+  referenceText: string;
   isSubmitted?: boolean;
 }
 

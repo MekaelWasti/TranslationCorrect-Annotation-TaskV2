@@ -35,12 +35,21 @@ function App() {
   const { user, signInWithGoogle, logout, loading } = useAuth();
   const [translations, setTranslations] = useState<TranslationEntry[] | null>(null);
   const [totalPages, setTotalPages] = useState(1);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => {
+    // Try to restore page from localStorage, default to 1
+    const savedPage = localStorage.getItem('currentPage');
+    return savedPage ? parseInt(savedPage) : 1;
+  });
   const [selectedEntry, setSelectedEntry] = useState<TranslationEntry | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Save current page to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('currentPage', currentPage.toString());
+  }, [currentPage]);
 
   useEffect(() => {
     const loadTranslations = async () => {
@@ -79,7 +88,9 @@ function App() {
       }
     };
 
-    loadTranslations();
+    if (user) {
+      loadTranslations();
+    }
   }, [currentPage, user]);
 
   const handlePageChange = (newPage: number) => {
