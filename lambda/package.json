@@ -1,0 +1,17 @@
+{
+  "name": "translation-annotation-lambda",
+  "version": "1.0.0",
+  "description": "AWS Lambda functions for translation annotation system",
+  "scripts": {
+    "package-save": "cd saveAnnotation && zip -r ../saveAnnotation.zip index.js ../node_modules ../package.json",
+    "package-delete": "cd deleteAnnotation && zip -r ../deleteAnnotation.zip index.js ../node_modules ../package.json",
+    "package-get": "cd getTranslations && zip -r ../getTranslations.zip index.js ../node_modules ../package.json",
+    "deploy-save": "aws lambda update-function-code --function-name saveAnnotation --zip-file fileb://saveAnnotation.zip",
+    "deploy-delete": "aws lambda update-function-code --function-name deleteAnnotation --zip-file fileb://deleteAnnotation.zip",
+    "deploy-get": "aws lambda update-function-code --function-name getTranslations --zip-file fileb://getTranslations.zip",
+    "deploy": "npm run package-save && npm run package-delete && npm run package-get && npm run deploy-save && npm run deploy-delete && npm run deploy-get"
+  },
+  "dependencies": {
+    "mongodb": "^6.3.0"
+  }
+}
