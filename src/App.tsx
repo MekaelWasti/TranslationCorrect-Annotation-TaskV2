@@ -41,6 +41,9 @@ function App() {
     return savedPage ? parseInt(savedPage) : 1;
   });
   const [selectedEntry, setSelectedEntry] = useState<TranslationEntry | null>(null);
+  const [lastSelectedEntryId, setLastSelectedEntryId] = useState<string | null>(() => {
+    return localStorage.getItem('lastSelectedEntryId');
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -50,6 +53,27 @@ function App() {
   useEffect(() => {
     localStorage.setItem('currentPage', currentPage.toString());
   }, [currentPage]);
+
+  // Save last selected entry ID to localStorage
+  useEffect(() => {
+    if (selectedEntry) {
+      localStorage.setItem('lastSelectedEntryId', selectedEntry.id);
+    }
+  }, [selectedEntry]);
+
+  // Restore selected entry when translations load
+  useEffect(() => {
+    if (translations && lastSelectedEntryId) {
+      const savedEntry = translations.find(t => t.id === lastSelectedEntryId);
+      if (savedEntry && !savedEntry.isSubmitted) {
+        setSelectedEntry(savedEntry);
+      } else {
+        // Clear saved entry if not found or already submitted
+        localStorage.removeItem('lastSelectedEntryId');
+        setLastSelectedEntryId(null);
+      }
+    }
+  }, [translations, lastSelectedEntryId]);
 
   useEffect(() => {
     const loadTranslations = async () => {
@@ -95,7 +119,8 @@ function App() {
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
-    setSelectedEntry(null);
+    // Don't clear selection when changing pages
+    // setSelectedEntry(null);
   };
 
   const handleEntrySelect = (entry: TranslationEntry) => {
@@ -312,6 +337,26 @@ function App() {
 
   const getCurrentBatchEntries = () => translations || [];
 
+  // Clear selected entry but keep lastSelectedEntryId when logging out
+  const handleLogout = async () => {
+    setSelectedEntry(null);
+    await logout();
+  };
+
+  // Try to restore selected entry after login
+  useEffect(() => {
+    if (user && translations && lastSelectedEntryId) {
+      const savedEntry = translations.find(t => t.id === lastSelectedEntryId);
+      if (savedEntry && !savedEntry.isSubmitted) {
+        setSelectedEntry(savedEntry);
+      } else {
+        // Clear saved entry if not found or already submitted
+        localStorage.removeItem('lastSelectedEntryId');
+        setLastSelectedEntryId(null);
+      }
+    }
+  }, [user, translations, lastSelectedEntryId]);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -339,7 +384,7 @@ function App() {
               <Typography variant="body1" sx={{ mr: 2 }}>
                 {user.email}
               </Typography>
-              <Button color="inherit" onClick={logout}>
+              <Button color="inherit" onClick={handleLogout}>
                 Logout
               </Button>
             </>
