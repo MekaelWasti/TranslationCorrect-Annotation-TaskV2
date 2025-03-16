@@ -1,9 +1,12 @@
+export type TranslationLanguage = 'mandarin' | 'cantonese';
+
 export interface TranslationEntry {
   id: string;
   englishText: string;
   chineseText: string;
   referenceText: string;
   isSubmitted?: boolean;
+  language: TranslationLanguage;
 }
 
 export interface AnnotatedTranslation extends TranslationEntry {
