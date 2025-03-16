@@ -3,7 +3,7 @@ import { Container, Box, CircularProgress, AppBar, Toolbar, Typography, Button, 
 import { TranslationAnnotator } from './components/TranslationAnnotator';
 import { BatchSelector } from './components/BatchSelector';
 import { useAuth } from './context/AuthContext';
-import { TranslationEntry, ErrorSpan, AnnotationSubmission } from './types';
+import { TranslationEntry, ErrorSpan, AnnotationSubmission, TranslationLanguage } from './types';
 import logo from './assets/logo.svg';
 
 const GoogleIcon = () => (
@@ -48,6 +48,9 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<TranslationLanguage>(() => {
+    return (localStorage.getItem('selectedLanguage') as TranslationLanguage) || 'mandarin';
+  });
 
   // Save current page to localStorage whenever it changes
   useEffect(() => {
@@ -80,7 +83,7 @@ function App() {
       try {
         setIsLoading(true);
         const response = await fetch(
-          `${import.meta.env.VITE_AWS_ANNOTATION_ENDPOINT}?page=${currentPage}&limit=${BATCH_SIZE}${user ? `&userId=${user.uid}` : ''}`,
+          `${import.meta.env.VITE_AWS_ANNOTATION_ENDPOINT}?page=${currentPage}&limit=${BATCH_SIZE}&language=${selectedLanguage}${user ? `&userId=${user.uid}` : ''}`,
           {
             method: 'GET',
             headers: {
@@ -115,7 +118,7 @@ function App() {
     if (user) {
       loadTranslations();
     }
-  }, [currentPage, user]);
+  }, [currentPage, user, selectedLanguage]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -357,6 +360,13 @@ function App() {
     }
   }, [user, translations, lastSelectedEntryId]);
 
+  const handleLanguageChange = (language: TranslationLanguage) => {
+    setSelectedLanguage(language);
+    localStorage.setItem('selectedLanguage', language);
+    setSelectedEntry(null);
+    setCurrentPage(1);
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -369,7 +379,8 @@ function App() {
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static" elevation={0}>
         <Toolbar>
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+          {/* Logo */}
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <img 
               src={logo} 
               alt="TranslationCorrect Logo" 
@@ -379,15 +390,44 @@ function App() {
               }} 
             />
           </Box>
+
+          {/* Language Toggle and User Info */}
           {user && (
-            <>
-              <Typography variant="body1" sx={{ mr: 2 }}>
-                {user.email}
-              </Typography>
-              <Button color="inherit" onClick={handleLogout}>
-                Logout
-              </Button>
-            </>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              width: '100%'
+            }}>
+              {/* Language Toggle */}
+              <Box>
+                <Button
+                  color={selectedLanguage === 'mandarin' ? 'primary' : 'inherit'}
+                  variant={selectedLanguage === 'mandarin' ? 'contained' : 'outlined'}
+                  onClick={() => handleLanguageChange('mandarin')}
+                  sx={{ mr: 1 }}
+                >
+                  Mandarin
+                </Button>
+                <Button
+                  color={selectedLanguage === 'cantonese' ? 'primary' : 'inherit'}
+                  variant={selectedLanguage === 'cantonese' ? 'contained' : 'outlined'}
+                  onClick={() => handleLanguageChange('cantonese')}
+                >
+                  Cantonese
+                </Button>
+              </Box>
+
+              {/* User Info and Logout */}
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography variant="body1" sx={{ mr: 2 }}>
+                  {user.email}
+                </Typography>
+                <Button color="inherit" onClick={handleLogout}>
+                  Logout
+                </Button>
+              </Box>
+            </Box>
           )}
         </Toolbar>
       </AppBar>

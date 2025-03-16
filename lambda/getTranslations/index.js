@@ -47,40 +47,39 @@ exports.handler = async (event) => {
   };
 
   try {
-    const queryParams = event.queryStringParameters || {};
-    const page = parseInt(queryParams.page) || 1;
-    const limit = parseInt(queryParams.limit) || 20;
-    const userId = queryParams.userId;
-    const skip = (page - 1) * limit;
-
     const db = await connectToDatabase();
-    const translationsCollection = db.collection('english-chinese-input-dataset');
-    const annotationsCollection = db.collection(process.env.MONGODB_COLLECTION_NAME);
-
-    // Get total count for pagination
+    const page = parseInt(event.queryStringParameters?.page) || 1;
+    const limit = parseInt(event.queryStringParameters?.limit) || 20;
+    const userId = event.queryStringParameters?.userId;
+    const language = event.queryStringParameters?.language || 'mandarin';
+    
+    const skip = (page - 1) * limit;
+    
+    // Select collection based on language
+    const collectionName = language === 'cantonese' 
+      ? 'english-cantonese-input-dataset' 
+      : 'english-chinese-input-dataset';
+    
+    const translationsCollection = db.collection(collectionName);
+    
     const total = await translationsCollection.countDocuments();
     const totalPages = Math.ceil(total / limit);
 
-    // Get paginated translations
     const translations = await translationsCollection.find({})
       .skip(skip)
       .limit(limit)
       .toArray();
 
-    // Transform translations and get submission status if userId is provided
-    const transformedTranslations = translations.map(item => {
-      const translation = {
-        id: item._id.toString(),
-        englishText: item.original,
-        chineseText: item.machine_translation,
-        referenceText: item.ref,
-        isSubmitted: userId ? !!(item.annotationStatus?.[userId]) : false
-      };
+    const transformedTranslations = translations.map(item => ({
+      id: item._id.toString(),
+      englishText: item.original,
+      chineseText: item.machine_translation,
+      referenceText: item.ref,
+      isSubmitted: userId ? !!(item.annotationStatus?.[userId]) : false,
+      language // Add language to the response
+    }));
 
-      return translation;
-    });
-
-    const response = {
+    return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
@@ -93,8 +92,6 @@ exports.handler = async (event) => {
         }
       })
     };
-
-    return response;
   } catch (error) {
     console.error('Error:', error);
     return {
